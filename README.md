@@ -1,40 +1,38 @@
 # ORIN.AI
 
-**Local-first, modular personal AI assistant** for Windows, designed for future
-Gemini, Ollama, memory, voice, device clients, and plugin integrations.
+Local-first modular Windows assistant, with a real Gemini integration and
+strictly allowlisted system tools. Designed for future Ollama, SQLite memory,
+voice, device clients and an optional open-source plugin ecosystem.
 
-> **Status: v0.3 development branch.** The included demo provider is a
-> deterministic keyword router, **not an LLM**.
-
-## Quick start (Windows, Python 3.11–3.13)
+## Quick start (Windows, Python 3.13)
 
 ```powershell
-git clone https://github.com/RuslanSharifov/ORIN.AI.git
-cd ORIN.AI
-git switch feature/tool-validation-v03
-py -3.13 -m venv .venv
-.venv\Scripts\Activate.ps1
+git fetch origin
+git switch feature/gemini-v04
 python -m pip install -e ".[dev]"
-orin tools
-orin ask "RAM necedir?"
-orin ask "saat necedir?"
+```
+
+Add your key to local `.env` (never commit it):
+
+```dotenv
+GEMINI_API_KEY=your_key_here
+ORIN_GEMINI_MODEL=gemini-2.5-flash
+```
+
+```powershell
+orin chat "Salam"
+orin chat "RAM necedir?"
+orin chat
 pytest
 ruff check .
 ```
 
-## Architecture
+- `orin chat`: real Gemini API, optional safe function calling
+- `orin ask`: offline deterministic demo (no Gemini)
+- `orin tools`: list registered tools
+- `orin run get_ram_usage`: run a local read-only tool
 
-- `src/orin/core/`: agent, contracts, session, tool registry and argument validation
-- `src/orin/tools/`: read-only local system tools
-- `src/orin/providers/`: provider protocol and offline demo
-- `src/orin/cli.py`: local command line
-- `tests/`: automated tests
-- `docs/`: architecture, agent design, and security limitations
+Read `docs/GEMINI.md` for security and limitations.
+The interactive Gemini chat is stateless in this version.
 
-The registry is an allowlist, **not a sandbox**. No real LLM, Gemini API,
-memory database, streaming voice or remote API is included yet.
-
-## Open source
-
-This repository is currently private. A license has not yet been chosen.
-Never commit credentials or personal conversation history.
+This repository is private and an open-source license has not been selected.
