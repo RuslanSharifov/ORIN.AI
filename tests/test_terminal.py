@@ -34,7 +34,7 @@ def test_load_env_from_project_root_when_called_elsewhere(tmp_path, monkeypatch)
     project = tmp_path / "project"
     (project / "src" / "orin").mkdir(parents=True)
     (project / ".env").write_text(
-        "GEMINI_API_KEY=local-test-key\\nORIN_GEMINI_MODEL=gemini-3.1-flash-lite\\n"
+        "GEMINI_API_KEY=local-test-key\nORIN_GEMINI_MODEL=gemini-3.1-flash-lite\n"
     )
     fake_cli = project / "src" / "orin" / "cli.py"
     fake_cli.touch()
@@ -55,7 +55,7 @@ def test_load_env_from_project_root_when_called_elsewhere(tmp_path, monkeypatch)
 def test_existing_key_is_not_overwritten(tmp_path, monkeypatch):
     from orin import cli
 
-    (tmp_path / ".env").write_text("GEMINI_API_KEY=from-file\\n")
+    (tmp_path / ".env").write_text("GEMINI_API_KEY=from-file\n")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("GEMINI_API_KEY", "existing")
     cli.load_gemini_env()
