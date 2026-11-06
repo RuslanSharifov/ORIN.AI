@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from orin.app import build_registry
@@ -12,49 +13,41 @@ from orin.providers.demo import DemoProvider
 
 
 def start_terminal(provider, agent) -> int:
-    """Run an interactive terminal session until the user exits."""
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.prompt import Prompt
-    from rich.text import Text
-
-    console = Console()
-    console.clear()
-    banner = Text()
-    banner.append("  ORIN.AI  ", style="bold bright_cyan")
-    banner.append("  Personal AI Assistant\n", style="white")
-    banner.append("  Gemini-powered terminal workspace", style="dim")
-    console.print(Panel(banner, border_style="cyan", padding=(1, 2)))
-    console.print("[dim]Type /exit to quit, /help for commands, /clear to clear the screen.[/dim]\n")
+    """Interactive chat with CMD-safe output (no cursor movement or spinners)."""
+    print()
+    print("=" * 52)
+    print(" ORIN.AI  |  Personal AI Assistant")
+    print(" Gemini-powered terminal workspace")
+    print("=" * 52)
+    print(" Commands: /help  /clear  /exit")
+    print()
     while True:
         try:
-            message = Prompt.ask("[bold bright_green]YOU[/bold bright_green]").strip()
+            message = input("YOU> ").strip()
         except (EOFError, KeyboardInterrupt):
-            console.print("\n[dim]ORIN session closed.[/dim]")
+            print("\nORIN session closed.")
             return 0
         if not message:
             continue
         command = message.casefold()
         if command in {"/exit", "exit", "quit", "/quit"}:
-            console.print("[dim]ORIN session closed.[/dim]")
+            print("ORIN session closed.")
             return 0
         if command == "/help":
-            console.print("[cyan]/help[/cyan] commands  [cyan]/clear[/cyan] clear screen  [cyan]/exit[/cyan] quit")
+            print("Commands: /help (help), /clear (clear screen), /exit (quit)")
             continue
         if command == "/clear":
-            console.clear()
+            os.system("cls" if os.name == "nt" else "clear")
+            print("ORIN.AI  |  Type /exit to quit.\n")
             continue
         from orin.providers.gemini import GeminiError
 
         try:
-            with console.status("[cyan]ORIN is thinking...[/cyan]", spinner="dots"):
-                reply = provider.ask(message, agent)
-            console.print()
-            console.print("[bold bright_cyan]ORIN>[/bold bright_cyan]")
-            console.print(reply or "[dim](No text returned.)[/dim]")
-            console.print()
+            print("ORIN> Thinking...", flush=True)
+            reply = provider.ask(message, agent)
+            print(f"ORIN> {reply or '(No text returned.)'}\n", flush=True)
         except GeminiError as error:
-            console.print(f"[red]ORIN error:[/red] {error}")
+            print(f"ORIN> Error: {error}\n", flush=True)
 
 
 def main() -> int:
@@ -84,8 +77,6 @@ def main() -> int:
 
         from orin.providers.gemini import GeminiError, GeminiProvider
 
-        # The per-user config allows launching ORIN from any working directory.
-        # Local .env takes precedence over the per-user config.
         load_dotenv(Path.cwd() / ".env")
         load_dotenv(Path.home() / ".orin" / ".env")
         try:
