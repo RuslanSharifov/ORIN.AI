@@ -1,57 +1,45 @@
 # ORIN.AI
 
-**Local-first, modular personal AI assistant** for Windows. Designed to grow into
-voice conversations, local memory, device control, Gemini integration, offline
-Ollama support and, potentially, an open-source plugin ecosystem.
+**Local-first, modular personal AI assistant** for Windows, designed for future
+Gemini, Ollama, memory, voice, device clients, and plugin integrations.
 
-> **Status: v0.1 foundation.** This is a CLI with explicitly registered
-> read-only system tools, not yet a conversational assistant.
+> **Status: v0.2 development branch.** The agent core is provider-neutral.
+> The included demo provider is a keyword router, **not a real AI model**.
 
-## Quick start (Windows PowerShell)
-
-Requires Python 3.11+.
+## Quick start (Windows, Python 3.11–3.13)
 
 ```powershell
 git clone https://github.com/RuslanSharifov/ORIN.AI.git
 cd ORIN.AI
-py -3.11 -m venv .venv
+git checkout feature/agent-core-v0
+py -3.13 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
 orin tools
-orin run get_current_time
 orin run get_ram_usage
-orin run get_cpu_usage
+orin ask "RAM necedir?"
 pytest
+ruff check .
 ```
 
-To test changes before merge, run `git checkout feature/foundation-v0`
-**before** installing the package.
-
-## Initial guarantees
-
-- Tools are allowlisted and cannot execute unregistered function names.
-- Permission checks precede execution, with no privileges granted by default.
-- The initial tools are read-only; their data comes from the actual machine.
-- No API key, cloud account or model download required.
-- Local runtime data and secrets are excluded via `.gitignore`.
-
-## What is not included yet
-
-AI models, autonomous agents, microphone streaming, SQLite memory, device
-pairing, comprehensive input validation, production isolation and tool audit
-logs. These require separate implementation and security reviews.
+`orin ask` runs a complete offline tool-call demonstration: the demo
+provider selects an allowlisted tool, the agent executes it, and the provider
+formats the observed result.
 
 ## Project map
 
-- `src/orin/core/` — tool policy and registry
-- `src/orin/tools/` — safe read-only utilities
-- `src/orin/app.py` — wiring layer
-- `src/orin/cli.py` — CLI entry point
+- `src/orin/core/` — tool registry, agent, contracts and session
+- `src/orin/tools/` — read-only system utilities
+- `src/orin/providers/` — provider interface and deterministic demo
+- `src/orin/cli.py` — command-line interface
 - `tests/` — automated tests
-- `docs/ARCHITECTURE.md` — design and roadmap
+- `docs/ARCHITECTURE.md`, `docs/AGENT_CORE.md` — design and limits
 
-## Open-source plan
+## Security and open-source readiness
 
-The repository is currently private. A license has intentionally **not**
-been chosen yet; publication and contributor permissions need an explicit
-license decision. See `CONTRIBUTING.md`.
+Tools are explicitly registered and permissions are checked before execution.
+This is **not yet a security sandbox**. Model input validation, confirmation
+flows, persistent audit logs, and plugin isolation remain planned.
+
+The repository is private; no open-source license has been selected yet.
+Do not commit secrets, local conversation data, or API keys.
