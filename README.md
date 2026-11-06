@@ -1,57 +1,61 @@
 # ORIN.AI
 
-**Local-first, modular personal AI assistant** for Windows. Designed to grow into
-voice conversations, local memory, device control, Gemini integration, offline
-Ollama support and, potentially, an open-source plugin ecosystem.
+Local-first modular Windows assistant, with Gemini API integration and
+strictly allowlisted read-only system tools.
 
-> **Status: v0.1 foundation.** This is a CLI with explicitly registered
-> read-only system tools, not yet a conversational assistant.
-
-## Quick start (Windows PowerShell)
-
-Requires Python 3.11+.
+## Setup (Windows, Python 3.13)
 
 ```powershell
-git clone https://github.com/RuslanSharifov/ORIN.AI.git
-cd ORIN.AI
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
+git fetch origin
+git switch feature/start-terminal-ui-v05
 python -m pip install -e ".[dev]"
-orin tools
-orin run get_current_time
-orin run get_ram_usage
-orin run get_cpu_usage
-pytest
 ```
 
-To test changes before merge, run `git checkout feature/foundation-v0`
-**before** installing the package.
+Keep your existing Gemini key in the project `.env` file:
 
-## Initial guarantees
+```dotenv
+GEMINI_API_KEY=your_key_here
+ORIN_GEMINI_MODEL=gemini-3.1-flash-lite
+```
 
-- Tools are allowlisted and cannot execute unregistered function names.
-- Permission checks precede execution, with no privileges granted by default.
-- The initial tools are read-only; their data comes from the actual machine.
-- No API key, cloud account or model download required.
-- Local runtime data and secrets are excluded via `.gitignore`.
+## Launch the terminal UI
 
-## What is not included yet
+```powershell
+orin start
+```
 
-AI models, autonomous agents, microphone streaming, SQLite memory, device
-pairing, comprehensive input validation, production isolation and tool audit
-logs. These require separate implementation and security reviews.
+A branded terminal UI appears with a persistent prompt. Type questions
+normally and read responses under `ORIN>`. Built-in commands:
+`/help`, `/clear`, `/exit`.
 
-## Project map
+Other commands:
+- `orin chat "Salam"`: one-shot Gemini request
+- `orin chat`: interactive terminal UI
+- `orin ask "RAM necedir?"`: offline keyword demo (no Gemini)
+- `orin tools`: list registered tools
+- `orin run get_ram_usage`: run a local read-only tool
 
-- `src/orin/core/` — tool policy and registry
-- `src/orin/tools/` — safe read-only utilities
-- `src/orin/app.py` — wiring layer
-- `src/orin/cli.py` — CLI entry point
-- `tests/` — automated tests
-- `docs/ARCHITECTURE.md` — design and roadmap
+## Use from anywhere on Windows
 
-## Open-source plan
+While the project's virtual environment is active, `orin start` can run
+from any directory. To use the command without activating the project venv,
+install the CLI in a dedicated pipx environment:
 
-The repository is currently private. A license has intentionally **not**
-been chosen yet; publication and contributor permissions need an explicit
-license decision. See `CONTRIBUTING.md`.
+```powershell
+py -m pip install --user pipx
+py -m pipx ensurepath
+# Open a NEW terminal after ensurepath
+py -m pipx install C:\Users\User\Project\ORIN.AI
+```
+
+For a globally launched ORIN, store the API key in
+`%USERPROFILE%\.orin\.env` (e.g. `C:\Users\User\.orin\.env`).
+ORIN loads `.env` from the current directory first, then the user config.
+Do not commit either secret file.
+
+**Current limitation:** Interactive messages are independent Gemini requests.
+Conversation history and long-term memory are not implemented yet.
+Gemini may return transient service errors. No arbitrary shell execution
+or plugin sandbox is included.
+
+See `docs/GEMINI.md` for additional details.
