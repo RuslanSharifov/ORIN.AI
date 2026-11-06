@@ -91,12 +91,9 @@ def main() -> int:
         print(outcome.text)
         return 0
     if args.command in {"chat", "start"}:
-        from dotenv import load_dotenv
-
         from orin.providers.gemini import GeminiError, GeminiProvider
 
-        load_dotenv(Path.cwd() / ".env")
-        load_dotenv(Path.home() / ".orin" / ".env")
+        load_gemini_env()
         try:
             provider = GeminiProvider()
             agent = Agent(registry)
