@@ -3,43 +3,38 @@
 **Local-first, modular personal AI assistant** for Windows, designed for future
 Gemini, Ollama, memory, voice, device clients, and plugin integrations.
 
-> **Status: v0.2 development branch.** The agent core is provider-neutral.
-> The included demo provider is a keyword router, **not a real AI model**.
+> **Status: v0.3 development branch.** The included demo provider is a
+> deterministic keyword router, **not an LLM**.
 
 ## Quick start (Windows, Python 3.11–3.13)
 
 ```powershell
 git clone https://github.com/RuslanSharifov/ORIN.AI.git
 cd ORIN.AI
-git checkout feature/agent-core-v0
+git switch feature/tool-validation-v03
 py -3.13 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
 orin tools
-orin run get_ram_usage
 orin ask "RAM necedir?"
+orin ask "saat necedir?"
 pytest
 ruff check .
 ```
 
-`orin ask` runs a complete offline tool-call demonstration: the demo
-provider selects an allowlisted tool, the agent executes it, and the provider
-formats the observed result.
+## Architecture
 
-## Project map
+- `src/orin/core/`: agent, contracts, session, tool registry and argument validation
+- `src/orin/tools/`: read-only local system tools
+- `src/orin/providers/`: provider protocol and offline demo
+- `src/orin/cli.py`: local command line
+- `tests/`: automated tests
+- `docs/`: architecture, agent design, and security limitations
 
-- `src/orin/core/` — tool registry, agent, contracts and session
-- `src/orin/tools/` — read-only system utilities
-- `src/orin/providers/` — provider interface and deterministic demo
-- `src/orin/cli.py` — command-line interface
-- `tests/` — automated tests
-- `docs/ARCHITECTURE.md`, `docs/AGENT_CORE.md` — design and limits
+The registry is an allowlist, **not a sandbox**. No real LLM, Gemini API,
+memory database, streaming voice or remote API is included yet.
 
-## Security and open-source readiness
+## Open source
 
-Tools are explicitly registered and permissions are checked before execution.
-This is **not yet a security sandbox**. Model input validation, confirmation
-flows, persistent audit logs, and plugin isolation remain planned.
-
-The repository is private; no open-source license has been selected yet.
-Do not commit secrets, local conversation data, or API keys.
+This repository is currently private. A license has not yet been chosen.
+Never commit credentials or personal conversation history.

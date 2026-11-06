@@ -1,8 +1,10 @@
-"""Explicit allowlist for tools. Models never execute arbitrary Python or shell code."""
+"""Explicit allowlist for tools. Models never execute arbitrary code."""
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
+
+from orin.core.validation import InvalidToolArguments, validate_arguments
 
 
 class ToolError(Exception):
@@ -59,11 +61,10 @@ class ToolRegistry:
             raise ToolPermissionError(f"Permission denied for tool: {name}")
 
         arguments = {} if arguments is None else arguments
-        if not isinstance(arguments, Mapping) or any(
-            not isinstance(key, str) for key in arguments
-        ):
-            raise ToolValidationError("Arguments must be an object with string keys")
+        if not isinstance(arguments, Mapping):
+            raise ToolValidationError("Arguments must be an object")
         try:
-            return spec.handler(**arguments)
-        except TypeError as error:
-            raise ToolValidationError(f"Invalid arguments for {name}") from error
+            validated = validate_arguments(spec.handler, arguments)
+        except InvalidToolArguments as error:
+            raise ToolValidationError(str(error)) from error
+        return spec.handler(**validated)
