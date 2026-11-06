@@ -12,7 +12,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from orin.core.agent import Agent
-from orin.core.contracts import ModelResponse, ToolCall, ToolResult
+from orin.core.contracts import ModelResponse, ToolCall
 
 
 class GeminiError(RuntimeError):
