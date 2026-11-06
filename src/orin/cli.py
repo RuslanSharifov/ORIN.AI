@@ -50,6 +50,24 @@ def start_terminal(provider, agent) -> int:
             print(f"ORIN> Error: {error}\n", flush=True)
 
 
+def load_gemini_env() -> None:
+    """Load credentials independent of the terminal's working directory.
+
+    Order: existing environment > current directory > user config >
+    installed project root. The latter supports editable installs.
+    """
+    from dotenv import load_dotenv
+
+    candidates = (
+        Path.cwd() / ".env",
+        Path.home() / ".orin" / ".env",
+        Path(__file__).resolve().parents[2] / ".env",
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            load_dotenv(candidate, override=False)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="ORIN.AI")
     subcommands = parser.add_subparsers(dest="command", required=True)

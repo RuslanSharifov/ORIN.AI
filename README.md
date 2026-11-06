@@ -7,7 +7,7 @@ strictly allowlisted read-only system tools.
 
 ```powershell
 git fetch origin
-git switch feature/start-terminal-ui-v05
+git switch main
 python -m pip install -e ".[dev]"
 ```
 
@@ -50,7 +50,7 @@ py -m pipx install C:\Users\User\Project\ORIN.AI
 
 For a globally launched ORIN, store the API key in
 `%USERPROFILE%\.orin\.env` (e.g. `C:\Users\User\.orin\.env`).
-ORIN loads `.env` from the current directory first, then the user config.
+ORIN searches the current directory, then the user config, then the installed\nproject's `.env` file (including editable installations). Existing environment\nvariables take precedence. This lets `orin start` work from any directory\nwithout copying a key, provided the installed project still exists.
 Do not commit either secret file.
 
 **Current limitation:** Interactive messages are independent Gemini requests.
