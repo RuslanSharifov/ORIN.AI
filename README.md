@@ -59,3 +59,24 @@ Gemini may return transient service errors. No arbitrary shell execution
 or plugin sandbox is included.
 
 See `docs/GEMINI.md` for additional details.
+
+
+## ORIN terminal dashboard (v0.6)
+
+Run `orin start` from any folder after installation. The new terminal screen
+uses a responsive original ORIN wordmark and droid, a live session summary and
+colored user/assistant/error output. Text wrapped in `*emphasis*` or
+`**bold**` is highlighted in cyan; `__underlined__` is underlined and inline
+`code` is amber. Content is treated as untrusted: Rich markup and terminal
+control codes in model responses cannot change the terminal.
+
+- `/status`: show sent requests, successful answers, failures.
+- `/help`: list commands.
+- `/clear`: clear the terminal only when explicitly requested.
+- `/exit`: end the session.
+
+The `Thinking...` animation disappears after each request in interactive
+terminals. Set `ORIN_NO_ANIMATION=1` for a static progress message. The
+dashboard doesn't change other programs or suppress their startup banners.
+For the full wordmark and mascot side-by-side, use a terminal at least 68
+columns wide; at 92+ columns an expanded dashboard appears.
