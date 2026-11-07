@@ -157,7 +157,7 @@ def _banner(console: Console, stats: SessionStats, model: str) -> None:
             padding=(1, 1),
         )
     )
-    console.print(_status_line(stats, compact=console.width < 52))
+    console.print(_status_line(stats, compact=console.width < 65))
     console.print()
     console.rule("[dim]CONVERSATION[/]", style="grey35")
     console.print()
@@ -223,7 +223,7 @@ def start_terminal(provider, agent, *, console: Console | None = None) -> int:
         if command == "/status":
             console.print(
                 Panel(
-                    _status_line(stats, compact=console.width < 52),
+                    _status_line(stats, compact=console.width < 65),
                     title="SESSION METRICS",
                     border_style="bright_cyan",
                 )
@@ -264,5 +264,5 @@ def start_terminal(provider, agent, *, console: Console | None = None) -> int:
             stats.successes += 1
             stats.last_seconds = monotonic() - started
             _show_reply(console, stats.requests, reply, stats.last_seconds)
-        console.print(_status_line(stats, compact=console.width < 52))
+        console.print(_status_line(stats, compact=console.width < 65))
         console.print()
