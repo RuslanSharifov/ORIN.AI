@@ -9,7 +9,8 @@ from orin.core.agent import Agent
 from orin.core.registry import ToolError
 from orin.core.session import run_turn
 from orin.providers.demo import DemoProvider
-from orin.terminal_ui import render_reply, start_terminal
+from orin.terminal_ui import render_reply as render_reply
+from orin.terminal_ui import start_terminal
 
 
 def load_gemini_env() -> None:
