@@ -14,7 +14,7 @@ def test_terminal_responds_and_stays_open(capsys):
     with patch("builtins.input", side_effect=["Salam", "/exit"]):
         assert start_terminal(provider, MagicMock()) == 0
     provider.ask.assert_called_once()
-    assert "ORIN> Salam!" in capsys.readouterr().out
+    assert "ORIN > Salam!" in capsys.readouterr().out
 
 
 def test_terminal_help_and_clear_do_not_call_model():
@@ -25,7 +25,7 @@ def test_terminal_help_and_clear_do_not_call_model():
     ):
         assert start_terminal(provider, MagicMock()) == 0
     provider.ask.assert_not_called()
-    clear.assert_called_once()
+    clear.assert_not_called()
 
 
 def test_load_env_from_project_root_when_called_elsewhere(tmp_path, monkeypatch):
@@ -62,3 +62,21 @@ def test_existing_key_is_not_overwritten(tmp_path, monkeypatch):
     import os
 
     assert os.environ["GEMINI_API_KEY"] == "existing"
+
+def test_emphasis_is_colored_and_markup_is_literal():
+    from orin.cli import render_reply
+
+    result = render_reply("mence bu *duz mutenasib* demekdir [red]literal[/]")
+    assert result.plain == "mence bu duz mutenasib demekdir [red]literal[/]"
+    assert any("bright_cyan" in str(span.style) for span in result.spans)
+
+
+def test_status_counts_requests_and_successes(capsys):
+    provider = MagicMock()
+    provider.ask.return_value = "*ok*"
+    with patch("builtins.input", side_effect=["salam", "/status", "/exit"]):
+        assert start_terminal(provider, MagicMock()) == 0
+    output = capsys.readouterr().out
+    assert "Requests: 1" in output
+    assert "Success: 1" in output
+    assert "Errors: 0" in output
