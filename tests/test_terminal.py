@@ -14,18 +14,18 @@ def test_terminal_responds_and_stays_open(capsys):
     with patch("builtins.input", side_effect=["Salam", "/exit"]):
         assert start_terminal(provider, MagicMock()) == 0
     provider.ask.assert_called_once()
-    assert "ORIN > Salam!" in capsys.readouterr().out
+    assert "Salam!" in capsys.readouterr().out
 
 
 def test_terminal_help_and_clear_do_not_call_model():
     provider = MagicMock()
     with (
         patch("builtins.input", side_effect=["/help", "/clear", "/exit"]),
-        patch("orin.cli.os.system") as clear,
+        patch("rich.console.Console.clear") as clear,
     ):
         assert start_terminal(provider, MagicMock()) == 0
     provider.ask.assert_not_called()
-    clear.assert_not_called()
+    clear.assert_called_once()
 
 
 def test_load_env_from_project_root_when_called_elsewhere(tmp_path, monkeypatch):
@@ -77,6 +77,40 @@ def test_status_counts_requests_and_successes(capsys):
     with patch("builtins.input", side_effect=["salam", "/status", "/exit"]):
         assert start_terminal(provider, MagicMock()) == 0
     output = capsys.readouterr().out
-    assert "Requests: 1" in output
-    assert "Success: 1" in output
-    assert "Errors: 0" in output
+    assert "REQUESTS  01" in output
+    assert "SUCCESS  01" in output
+    assert "ERRORS  00" in output
+
+def test_original_banner_fits_common_terminal_widths():
+    from rich.console import Console
+
+    from orin.terminal_ui import SessionStats, _banner
+
+    for width in (35, 45, 60, 70, 85, 95, 110):
+        console = Console(width=width, color_system=None)
+        with console.capture() as captured:
+            _banner(console, SessionStats(), "gemini-3.1-flash-lite")
+        output = captured.get()
+        assert "ORIN" in output
+        assert all(len(line) <= width for line in output.splitlines())
+
+
+def test_model_reply_cannot_inject_terminal_control_codes():
+    from orin.cli import render_reply
+
+    result = render_reply("Hello *emphasis* [red]literal[/]\\x1b[2J")
+    assert result.plain == "Hello emphasis [red]literal[/][2J"
+    assert any("bright_cyan" in str(span.style) for span in result.spans)
+
+
+def test_error_request_updates_statistics(capsys):
+    from orin.providers.gemini import GeminiError
+
+    provider = MagicMock()
+    provider.ask.side_effect = GeminiError("Gemini busy")
+    with patch("builtins.input", side_effect=["Hello", "/exit"]):
+        assert start_terminal(provider, MagicMock()) == 0
+    output = capsys.readouterr().out
+    assert "Gemini busy" in output
+    assert "REQUESTS  01" in output
+    assert "ERRORS  01" in output
