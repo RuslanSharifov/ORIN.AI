@@ -98,7 +98,7 @@ def test_original_banner_fits_common_terminal_widths():
 def test_model_reply_cannot_inject_terminal_control_codes():
     from orin.cli import render_reply
 
-    result = render_reply("Hello *emphasis* [red]literal[/]\\x1b[2J")
+    result = render_reply("Hello *emphasis* [red]literal[/]\x1b[2J")
     assert result.plain == "Hello emphasis [red]literal[/][2J"
     assert any("bright_cyan" in str(span.style) for span in result.spans)
 
