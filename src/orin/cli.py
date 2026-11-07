@@ -19,7 +19,7 @@ def render_reply(message: str):
     from rich.text import Text
 
     result = Text()
-    pattern = re.compile(r"(\\*\\*([^*\\n]+)\\*\\*|\\*([^*\\n]+)\\*|__([^_\\n]+)__|_([^_\\n]+)_)")
+    pattern = re.compile(r"(\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|__([^_\n]+)__|_([^_\n]+)_)")
     position = 0
     for match in pattern.finditer(message):
         result.append(message[position:match.start()])
