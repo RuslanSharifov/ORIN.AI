@@ -10,9 +10,12 @@ def get_current_time() -> str:
     return datetime.now().astimezone().strftime("%H:%M")
 
 
-def get_ram_usage() -> dict[str, float]:
+def get_ram_usage() -> dict[str, float | str]:
     """Return observed memory usage; percentages are in [0, 100]."""
-    memory = psutil.virtual_memory()
+    try:
+        memory = psutil.virtual_memory()
+    except (OSError, psutil.Error):
+        return {"status": "unavailable", "reason": "Memory metrics are restricted on this device"}
     return {
         "percent": float(memory.percent),
         "total_gb": round(memory.total / (1024**3), 2),
@@ -20,6 +23,9 @@ def get_ram_usage() -> dict[str, float]:
     }
 
 
-def get_cpu_usage() -> dict[str, float]:
+def get_cpu_usage() -> dict[str, float | str]:
     """Return a short sampled CPU load percentage."""
-    return {"percent": float(psutil.cpu_percent(interval=0.1))}
+    try:
+        return {"percent": float(psutil.cpu_percent(interval=0.1))}
+    except (OSError, psutil.Error):
+        return {"status": "unavailable", "reason": "CPU usage is restricted on this device"}
