@@ -139,20 +139,26 @@ See `docs/GEMINI.md` for additional details.
 
 ## ORIN terminal dashboard (v0.6)
 
-Run `orin start` from any folder after installation. The new terminal screen
-uses a responsive original ORIN wordmark and droid, a live session summary and
-colored user/assistant/error output. Text wrapped in `*emphasis*` or
-`**bold**` is highlighted in cyan; `__underlined__` is underlined and inline
-`code` is amber. Content is treated as untrusted: Rich markup and terminal
-control codes in model responses cannot change the terminal.
+Run `orin start` from any folder after installation. The UI uses an
+original compact ORIN wordmark and companion robot, responsive to mobile
+Termux and Windows. Chat responses are separated by whitespace, without
+per-message status panels or raw error tracebacks. Text wrapped in
+`*emphasis*` or `**bold**` is highlighted; `__underlined__` is underlined,
+and inline `code` is amber.
 
-- `/status`: show sent requests, successful answers, failures.
+- `/status`: view request, success and error counts only when requested.
 - `/help`: list commands.
-- `/clear`: clear the terminal only when explicitly requested.
+- `/clear`: clear the screen manually.
 - `/exit`: end the session.
 
-The `Thinking...` animation disappears after each request in interactive
-terminals. Set `ORIN_NO_ANIMATION=1` for a static progress message. The
-dashboard doesn't change other programs or suppress their startup banners.
-For the full wordmark and mascot side-by-side, use a terminal at least 68
-columns wide; at 92+ columns an expanded dashboard appears.
+Interactive terminals display a temporary `Thinking...` animation. Set
+`ORIN_NO_ANIMATION=1` to disable animation. On Termux, ORIN automatically
+clears older chat from the screen between requests every 8 messages (the
+session stays active). To disable auto-clear run
+`ORIN_AUTO_CLEAR_EVERY=0 orin start`, or change the number, e.g.
+`ORIN_AUTO_CLEAR_EVERY=12 orin start`. Auto-clear is off by default on
+other platforms. Gemini requests and chats continue even if Android blocks
+access to `/proc/stat` or `/proc/meminfo`; the corresponding tool reports
+that the metric is unavailable instead of crashing the session. Terminal
+output does not expose Python exception tracebacks or private paths.
+ORIN doesn't modify other programs' startup banners.
