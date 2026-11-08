@@ -57,111 +57,58 @@ variables take precedence. This lets `orin start` work from any directory\nwitho
 Do not commit either secret file.
 
 
-## Android / Termux qurulumu (experimental)
+## Android / Termux quraşdırılması
 
-> **Status:** ORIN.AI v0.6 Termux-da real Android cihazında hələ test edilməyib.
-> Gemini mətn çatının və Rich terminal UI-nin işləməsi gözlənilir. Android-də CPU/RAM
-> göstəriciləri cihazın icazələrindən və `psutil` imkanlarından asılı ola bilər.
-> Root, `sudo` və telefonun yaddaşına ümumi giriş icazəsi tələb olunmur.
+ORIN.AI-ni Android-də Termux ilə quraşdıra bilərsən. Repo **public** olduğu üçün
+GitHub hesabına giriş və ya token tələb olunmur. Mobil uyğunluq hələ eksperimentaldır.
 
-### 1. Termux-u quraşdır
+### 1. Termux-da quraşdır
 
-Termux-u [F-Droid](https://f-droid.org/en/packages/com.termux/) və ya
-[Termux-un rəsmi GitHub releases](https://github.com/termux/termux-app/releases)
-səhifəsindən quraşdır. Stabil Android paketi üçün bu mənbələr tövsiyə olunur.
-Termux və onun əlavə tətbiqlərini fərqli mənbələrdən qarışdırma.
-Play Store versiyasının bəzi funksiyaları fərqli ola bilər.
-
-Açılan Termux terminalında aşağıdakı əmrləri ardıcıllıqla işlət:
+Termux-u [F-Droid](https://f-droid.org/en/packages/com.termux/) üzərindən aç.
+Aşağıdakı əmrləri ardıcıllıqla kopyala:
 
 ```bash
-pkg update && pkg upgrade -y
-pkg install -y python python-pip python-psutil git gh nano
-python --version
-python -m pip --version
-```
+pkg update -y && pkg upgrade -y
+pkg install -y git python python-pip python-psutil nano
 
-**Niyə `python-psutil`?** ORIN sistem məlumatları üçün `psutil` istifadə edir.
-Android/Termux-da adi `pip install psutil` C-kompilyasiya xətası verə bilər.
-Ona görə Termux-un paketindən istifadə edirik.
-
-### 2. Özəl GitHub repozitoriyasını endir
-
-`RuslanSharifov/ORIN.AI` hazırda **private** repo olduğu üçün telefonda
-GitHub hesabına giriş etməlisən. Təhlükəsiz üsul: GitHub CLI-nin brauzer
-autentifikasiyası (tokeni terminala, komanda sətrinə və ya README-yə yazma).
-
-```bash
-gh auth login --hostname github.com --git-protocol https --web
-gh auth status
-cd ~
-gh repo clone RuslanSharifov/ORIN.AI
-cd ORIN.AI
-git switch main
-```
-
-`gh auth login` brauzerdə təsdiq/kod tələb edə bilər. Hesabın repoya giriş
-hüququ olmalıdır. Repo nə vaxtsa *public* olsa, alternativ:
-
-```bash
 git clone https://github.com/RuslanSharifov/ORIN.AI.git
 cd ORIN.AI
-```
 
-### 3. Python virtual mühitini və ORIN-i qur
-
-`--system-site-packages` Termux-da sistem paketi olaraq qurduğumuz
-`python-psutil` modulunu virtual mühitə görünən edir.
-
-```bash
-cd ~/ORIN.AI
 python -m venv --system-site-packages .venv
 source .venv/bin/activate
+
 python -m pip install "rich>=13,<15" "python-dotenv>=1,<2"
 python -m pip install --no-deps -e .
 ```
 
-**Vacib:** Son əmrdə `--no-deps` saxla: bu, `pip`-in Android-də
-`psutil`-i yenidən kompilyasiya etməyə çalışmasının qarşısını alır.
-Digər iki asılılıq əvvəlki əmrlə qurulub. Repo `pyproject.toml` faylındakı
-asılılıqlar dəyişərsə bu quraşdırma üsulu yenidən nəzərdən keçirilməlidir.
+`python-psutil` Termux paketindən quraşdırılır. `--system-site-packages`
+onu virtual mühitdə əlçatan edir, `--no-deps` isə təkrar kompilyasiyanın
+qarşısını alır.
 
-Quraşdırmanı açar göstərmədən sına:
-
-```bash
-python -c "import psutil, rich, dotenv, orin; print('ORIN imports: OK')"
-orin tools
-orin run get_current_time
-```
-
-### 4. Gemini API açarını təhlükəsiz əlavə et
-
-Layihə qovluğunda `.env` faylı yarat:
+### 2. Gemini açarını əlavə et
 
 ```bash
-cd ~/ORIN.AI
+cp .env.example .env
 nano .env
 ```
 
-Fayla aşağıdakıları daxil et; `YOUR_GEMINI_API_KEY` yerinə **öz açarını**
-yaz. Bu, sənəd üçün nümunədir; real açarını GitHub-a göndərmə.
+`.env` faylındakı nümunə açarı **öz Gemini API açarınla** əvəz et:
 
 ```dotenv
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 ORIN_GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
-`nano`-da yadda saxla: **Ctrl+O**, Enter; çıxış: **Ctrl+X**.
-Sonra fayl icazəsini məhdudlaşdır:
+Nano: yadda saxlamaq üçün **Ctrl+O**, Enter; çıxmaq üçün **Ctrl+X**.
+Açarı heç vaxt GitHub-a göndərmə.
+
+### 3. ORIN-i başlat
 
 ```bash
-chmod 600 ~/ORIN.AI/.env
+orin start
 ```
 
-`.env` Git-də nəzərə alınmır (`.gitignore`), amma yenə də onu
-heç kimlə paylaşma. Modelin əlçatanlığı Gemini hesabından asılıdır.
-
-### 5. ORIN.AI-ni işə sal
+Termux-u sonradan yenidən açdıqda:
 
 ```bash
 cd ~/ORIN.AI
@@ -169,79 +116,18 @@ source .venv/bin/activate
 orin start
 ```
 
-Əmrlər: `/help`, `/status`, `/clear`, `/exit`.
-Qısa sınaq üçün başqa komandalar:
-
-```bash
-orin chat "Salam, ORIN!"
-orin ask "RAM necedir?"
-orin run get_cpu_usage
-```
-
-İnternet/Gemini yalnız `orin chat` və `orin start`-dakı real AI
-cavabları üçün tələb olunur. `orin ask` sadə offline demo-dur.
-
-### 6. Başqa qovluqdan istifadə və yenidən açma
-
-`orin` əmri virtual mühit aktiv olduqda istənilən qovluqdan işləyir;
-konfiqurasiya isə quraşdırılmış layihənin `.env` faylından oxunur.
-
-```bash
-source ~/ORIN.AI/.venv/bin/activate
-cd ~
-orin start
-```
-
-Alternativ olaraq, virtual mühiti aktivləşdirmədən birbaşa:
-
-```bash
-~/ORIN.AI/.venv/bin/orin start
-```
-
-### 7. Son yenilikləri quraşdır
+### Yeniləmə
 
 ```bash
 cd ~/ORIN.AI
-git switch main
-git pull --ff-only origin main
+git pull origin main
 source .venv/bin/activate
 python -m pip install --no-deps -e .
 orin start
 ```
 
-`.env` faylı yerində qalmalıdır. Termux-un Python versiyası əsaslı
-dəyişəndə `.venv` mühitinin yenidən yaradılması lazım ola bilər.
-
-### 8. Tez-tez rast gəlinən problemlər
-
-| Problem | Yoxlama / həll |
-| --- | --- |
-| `Repository not found` / `403` | `gh auth status` ilə girişini və özəl repo icazəni yoxla; `gh auth login` ilə yenidən daxil ol. |
-| `No module named psutil` | `pkg install python-psutil` et, virtual mühitin `--system-site-packages` ilə yaradıldığını yoxla. |
-| `Failed building wheel for psutil` | `pkg install python-psutil` və `python -m pip install --no-deps -e .` üsulunu istifadə et. |
-| `pip: command not found` | `pkg install python-pip` et; virtual mühiti yenidən aktivləşdir. |
-| `orin: command not found` | `source ~/ORIN.AI/.venv/bin/activate` et və `python -m pip install --no-deps -e .` əmrini təkrar işə sal. |
-| `GEMINI_API_KEY is missing` | `~/ORIN.AI/.env` faylının mövcudluğunu və dəyişən adını yoxla; açarı ekrana çıxarma. |
-| API `429` / `503` | Şəbəkəni, Gemini limitlərini və model əlçatanlığını yoxla; sonradan yenidən sına. |
-| Banner/animasiya qarışıq görünür | Terminalı genişləndir və ya animasiyanı söndür: `ORIN_NO_ANIMATION=1 orin start`. |
-
-İstəyə görə yalnız testləri quraşdırıb işlədə bilərsən (mobil üçün
-`ruff` məcburi deyil):
-
-```bash
-source ~/ORIN.AI/.venv/bin/activate
-python -m pip install pytest
-python -m pytest
-```
-
-**Məhdudiyyətlər:** Bu versiya telefonun kamera, mikrofon və digər
-Android icazələrini idarə etmir. Səsli idarəetmə, Android automation,
-uzunmüddətli yaddaş və tam platforma uyğunluğu hələ hazırlanmayıb.
-
-Rəsmi istinadlar:
-[Termux quraşdırılması](https://github.com/termux/termux-app#installation) ·
-[GitHub CLI / Android](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#android) ·
-[`psutil` installation](https://psutil.io/install/).
+Qeyd: Android-də bəzi CPU/RAM sistem məlumatları məhdud ola bilər.
+Heç bir GitHub login, token və ya ayrıca test əmri tələb olunmur.
 
 **Current limitation:** Interactive messages are independent Gemini requests.
 Conversation history and long-term memory are not implemented yet.
