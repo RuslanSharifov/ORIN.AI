@@ -79,7 +79,7 @@ def test_status_counts_requests_and_successes(capsys):
     output = capsys.readouterr().out
     assert "REQUESTS  01" in output
     assert "SUCCESS  01" in output
-    assert "FAILED  00" in output
+    assert "ERRORS  00" in output
 
 def test_original_banner_fits_common_terminal_widths():
     from rich.console import Console
@@ -175,7 +175,7 @@ def test_unexpected_tool_failure_does_not_close_chat(capsys):
     output = capsys.readouterr().out
     assert "/proc/stat" not in output
     assert "Yeniden salam" in output
-    assert "FAILED  01" in output
+    assert "ERRORS  01" in output
     assert provider.ask.call_count == 2
 
 
