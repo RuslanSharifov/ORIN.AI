@@ -1,3 +1,6 @@
+import pytest
+
+from orin.core.registry import ToolError
 from orin.tools.system import get_cpu_usage, get_current_time, get_ram_usage
 
 
@@ -28,10 +31,8 @@ def test_cpu_permission_denied_on_android(monkeypatch):
         raise PermissionError(13, "Permission denied", "/proc/stat")
 
     monkeypatch.setattr(system.psutil, "cpu_percent", denied)
-    result = system.get_cpu_usage()
-    assert result["status"] == "unavailable"
-    assert "percent" not in result
-    assert "/proc/stat" not in str(result)
+    with pytest.raises(ToolError, match="CPU statistics are restricted"):
+        system.get_cpu_usage()
 
 
 def test_ram_permission_denied_on_android(monkeypatch):
@@ -41,6 +42,22 @@ def test_ram_permission_denied_on_android(monkeypatch):
         raise PermissionError(13, "Permission denied", "/proc/meminfo")
 
     monkeypatch.setattr(system.psutil, "virtual_memory", denied)
-    result = system.get_ram_usage()
-    assert result["status"] == "unavailable"
-    assert "/proc/meminfo" not in str(result)
+    with pytest.raises(ToolError, match="RAM statistics are restricted"):
+        system.get_ram_usage()
+
+
+def test_restricted_android_cpu_tool_returns_failure_not_traceback(monkeypatch):
+    from orin.app import build_registry
+    from orin.core.agent import Agent
+    from orin.core.contracts import ModelResponse, ToolCall
+    from orin.tools import system
+
+    def denied(*, interval):
+        raise PermissionError(13, "Permission denied", "/proc/stat")
+
+    monkeypatch.setattr(system.psutil, "cpu_percent", denied)
+    outcome = Agent(build_registry()).process(
+        ModelResponse(tool_calls=(ToolCall("get_cpu_usage"),))
+    )
+    assert not outcome.results[0].ok
+    assert "/proc/stat" not in str(outcome.results[0].error)
