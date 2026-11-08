@@ -42,3 +42,18 @@ def test_demo_round_trip():
     outcome = run_turn(DemoProvider(), Agent(build_registry()), "RAM neçə faizdir?")
     assert outcome.results[0].ok
     assert "percent" in outcome.text
+
+
+
+def test_unexpected_tool_failure_is_isolated():
+    from orin.core.registry import ToolRegistry, ToolSpec
+
+    def restricted():
+        raise PermissionError(13, "Permission denied", "/proc/stat")
+
+    registry = ToolRegistry()
+    registry.register(ToolSpec("restricted", "Unsafe on Android", restricted))
+    result = Agent(registry).process(ModelResponse(tool_calls=(ToolCall("restricted"),)))
+    assert result.results[0].ok is False
+    assert "unavailable" in result.results[0].error
+    assert "/proc/stat" not in result.results[0].error
