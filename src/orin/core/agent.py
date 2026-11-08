@@ -36,6 +36,15 @@ class Agent:
                 )
             except ToolError as error:
                 results.append(ToolResult(call.name, call.call_id, False, error=str(error)))
+            except Exception:
+                # A restricted OS API (e.g. Android /proc) must not kill the chat.
+                # Avoid exposing local paths or internal tracebacks to the model.
+                results.append(
+                    ToolResult(
+                        call.name, call.call_id, False,
+                        error="This tool is unavailable on the current device",
+                    )
+                )
             else:
                 results.append(ToolResult(call.name, call.call_id, True, data=data))
         return AgentOutcome(text=response.text, results=tuple(results))
