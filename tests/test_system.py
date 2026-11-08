@@ -18,3 +18,29 @@ def test_ram_values():
 
 def test_cpu_percentage():
     assert 0 <= get_cpu_usage()["percent"] <= 100
+
+
+
+def test_cpu_permission_denied_on_android(monkeypatch):
+    from orin.tools import system
+
+    def denied(*, interval):
+        raise PermissionError(13, "Permission denied", "/proc/stat")
+
+    monkeypatch.setattr(system.psutil, "cpu_percent", denied)
+    result = system.get_cpu_usage()
+    assert result["status"] == "unavailable"
+    assert "percent" not in result
+    assert "/proc/stat" not in str(result)
+
+
+def test_ram_permission_denied_on_android(monkeypatch):
+    from orin.tools import system
+
+    def denied():
+        raise PermissionError(13, "Permission denied", "/proc/meminfo")
+
+    monkeypatch.setattr(system.psutil, "virtual_memory", denied)
+    result = system.get_ram_usage()
+    assert result["status"] == "unavailable"
+    assert "/proc/meminfo" not in str(result)
