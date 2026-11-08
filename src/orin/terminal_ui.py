@@ -143,6 +143,7 @@ def _banner(console: Console, stats: SessionStats, model: str) -> None:
     )
     console.print()
 
+
 def _show_reply(console: Console, number: int, reply: str, elapsed: float) -> None:
     """Use whitespace and a subtle heading instead of full-width answer boxes."""
     label = Text("  ◈ ORIN", style="bold bright_cyan")
@@ -171,7 +172,8 @@ def _auto_clear_frequency(console: Console) -> int:
     is_termux = "com.termux" in os.getenv("PREFIX", "") or bool(
         os.getenv("TERMUX_VERSION")
     )
-    return 8 if is_termux and console.height <= 45 else 0
+    return 8 if is_termux else 0
+
 
 def start_terminal(provider, agent, *, console: Console | None = None) -> int:
     """Run a resilient, distraction-free terminal chat on mobile and desktop."""
