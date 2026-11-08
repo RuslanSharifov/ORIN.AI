@@ -1,6 +1,6 @@
-"""A responsive, self-contained terminal experience for ORIN.AI.
+"""A compact and responsive terminal experience for ORIN.AI.
 
-The UI does not clear the screen on launch or alter another application's output.
+Never clears the screen on startup or modifies output from other programs.
 """
 
 from __future__ import annotations
@@ -15,32 +15,32 @@ from time import monotonic
 from rich.align import Align
 from rich.console import Console, Group
 from rich.panel import Panel
-from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
-# Original compact logo and robotic companion, designed for narrow Termux screens.
 WORDMARK = (
-    "  ╔═╗ ╦═╗ ╦ ╔╗╔",
-    "  ║ ║ ╠╦╝ ║ ║║║",
-    "  ╚═╝ ╩╚═ ╩ ╝╚╝",
-)
-COMPANION = (
-    "     ╭─────────────╮ ",
-    "  ╭──┤  ●       ●  ├──╮",
-    "  │  │     ───     │  │",
-    "  ╰──┤   ╰─────╯   ├──╯",
-    "     ╰──────┬──────╯ ",
-    "            ◆        ",
+    "  ██████╗ ██████╗ ██╗███╗   ██╗",
+    " ██╔═══██╗██╔══██╗██║████╗  ██║",
+    " ██║   ██║██████╔╝██║██╔██╗ ██║",
+    " ██║   ██║██╔══██╗██║██║╚██╗██║",
+    " ╚██████╔╝██║  ██║██║██║ ╚████║",
+    "  ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝",
 )
 
-# Strip complete ANSI sequences, not only ESC bytes or Rich markup.
-ANSI_ESCAPE = re.compile(
-    r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|.)"
+# ORIN's original pixel companion, optimized for a monospaced phone screen.
+COMPANION = (
+    "     ▄████████▄",
+    "   ▄██        ██▄",
+    "   ██  ▄█  █▄  ██",
+    "   ██  ▀▀  ▀▀  ██",
+    "   ▀██▄  ▄▄  ▄██▀",
+    "     ▀████████▀",
+    "       ▐█  █▌",
 )
+
 CONTROL_CODES = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 EMPHASIS = re.compile(
-    r"(?P<code>`[^`\n]+`)"
+    r"(?P<code>\x60[^\x60\n]+\x60)"
     r"|(?P<bold>\*\*[^*\n]+\*\*)"
     r"|(?P<under>__[^_\n]+__)"
     r"|(?P<italic>\*[^*\n]+\*|_[^_\n]+_)"
@@ -48,23 +48,23 @@ EMPHASIS = re.compile(
 
 
 def render_reply(message: str) -> Text:
-    """Highlight Markdown-like emphasis safely without interpreting Rich markup."""
-    safe = CONTROL_CODES.sub("", ANSI_ESCAPE.sub("", message))
+    """Render emphasis without treating AI output as Rich markup or terminal codes."""
+    safe = CONTROL_CODES.sub("", message)
     result = Text(no_wrap=False)
-    pos = 0
+    position = 0
     for match in EMPHASIS.finditer(safe):
-        result.append(safe[pos:match.start()])
+        result.append(safe[position:match.start()])
         token = match.group(0)
         if match.lastgroup == "code":
             result.append(token[1:-1], style="bold bright_yellow on grey15")
         elif match.lastgroup == "under":
             result.append(token[2:-2], style="bold underline bright_cyan")
         elif match.lastgroup == "bold":
-            result.append(token[2:-2], style="bold bright_cyan on grey15")
+            result.append(token[2:-2], style="bold bright_cyan")
         else:
-            result.append(token[1:-1], style="bold bright_cyan on grey15")
-        pos = match.end()
-    result.append(safe[pos:])
+            result.append(token[1:-1], style="bold bright_cyan")
+        position = match.end()
+    result.append(safe[position:])
     return result
 
 
@@ -77,148 +77,164 @@ class SessionStats:
 
 
 def _status_line(stats: SessionStats, *, compact: bool = False) -> Text:
-    line = Text("  ")
+    """Metrics are only shown when the user types /status."""
+    line = Text()
     if compact:
         line.append(f"↗ {stats.requests}  ", style="bright_cyan")
         line.append(f"✓ {stats.successes}  ", style="green")
-        line.append(f"! {stats.errors}", style="red")
+        line.append(f"! {stats.errors}", style="yellow")
         return line
-    line.append("◉ ", style="bold bright_cyan")
-    line.append(f"REQUESTS  {stats.requests:02d}  ", style="bright_white")
-    line.append("✓ ", style="bold green")
-    line.append(f"SUCCESS  {stats.successes:02d}  ", style="bright_white")
-    line.append("! ", style="bold red")
-    line.append(f"ERRORS  {stats.errors:02d}", style="bright_white")
+    line.append(f"REQUESTS  {stats.requests:02d}    ", style="bright_cyan")
+    line.append(f"SUCCESS  {stats.successes:02d}    ", style="green")
+    line.append(f"FAILED  {stats.errors:02d}", style="yellow")
     if stats.last_seconds is not None:
-        line.append(f"   |   {stats.last_seconds:.1f}s", style="dim")
+        line.append(f"    {stats.last_seconds:.1f}s", style="dim")
     return line
 
 
-def _companion_art() -> Text:
-    art = Text("\n".join(COMPANION), style="bright_cyan")
-    for offset, symbol in enumerate(art.plain):
-        if symbol in {"●", "◆"}:
-            art.stylize("bold bright_yellow", offset, offset + 1)
-    return art
-
-
 def _banner(console: Console, stats: SessionStats, model: str) -> None:
-    """A balanced mobile/desktop welcome screen without repeating metrics."""
-    width = max(24, min(console.width, 100))
-    title = Text(" ORIN.AI ", style="bold bright_cyan")
-    title.append(" / personal intelligence", style="dim")
-    if width >= 64:
-        grid = Table.grid(expand=True, padding=(0, 2))
-        grid.add_column(ratio=3)
-        grid.add_column(ratio=2)
-        grid.add_row(
+    """Prefer a compact phone layout and reserve full pixel typography for desktop."""
+    width = max(30, min(console.width, 108))
+    brand = Text(" ◈ ORIN.AI", style="bold bright_cyan")
+    brand.append("   v0.6", style="dim")
+
+    if width >= 92:
+        body = Table.grid(expand=True, padding=(0, 1))
+        body.add_column(ratio=3)
+        body.add_column(ratio=2)
+        body.add_row(
             Group(
                 Text("\n".join(WORDMARK), style="bold bright_cyan"),
-                Text("     P E R S O N A L   /   A I", style="bright_white"),
-                Text("     Your private workspace", style="dim"),
+                Text("  P E R S O N A L   I N T E L L I G E N C E", style="white"),
             ),
-            Align.center(_companion_art()),
+            Group(
+                Align.center(Text("\n".join(COMPANION), style="bright_yellow")),
+                Align.center(Text("●  YOUR AI COMPANION", style="bold green")),
+            ),
         )
-        body = grid
-    elif width >= 38:
+    elif width >= 64:
+        body = Table.grid(expand=True, padding=(0, 1))
+        body.add_column(ratio=3)
+        body.add_column(ratio=2)
+        body.add_row(
+            Group(
+                Text("\n  O R I N", style="bold bright_cyan"),
+                Text("  PERSONAL AI", style="bold white"),
+                Text("\n  GEMINI  •  READY", style="bright_green"),
+                Text("  /help  /status  /clear", style="dim"),
+            ),
+            Align.center(Text("\n".join(COMPANION), style="bright_yellow")),
+        )
+    elif width >= 46:
         body = Group(
-            Align.center(Text("\n".join(WORDMARK), style="bold bright_cyan")),
-            Align.center(Text("  ◈  READY   ·   GEMINI", style="green")),
+            Align.center(Text("O R I N", style="bold bright_cyan")),
+            Align.center(Text("\n".join(COMPANION), style="bright_yellow")),
+            Align.center(Text("PERSONAL AI  •  READY", style="green")),
         )
     else:
-        body = Align.center(Text("◈ ORIN.AI  ·  READY", style="bold bright_cyan"))
+        body = Group(
+            Align.center(Text("O R I N", style="bold bright_cyan")),
+            Align.center(Text("◈  PERSONAL AI", style="bright_white")),
+            Align.center(Text("● READY", style="green")),
+        )
+
     console.print()
     console.print(
         Panel(
             body,
-            title=title if width >= 38 else "ORIN.AI",
+            title=brand,
             title_align="left",
-            border_style="cyan",
-            padding=(1, 1) if width >= 38 else (0, 0),
+            subtitle=Text("GEMINI  •  ONLINE", style="green"),
+            border_style="bright_cyan",
+            padding=(1, 1),
             width=width,
-            subtitle=Text(" /help · /status · /clear · /exit ", style="dim")
-            if width >= 48
-            else None,
         )
     )
     console.print()
 
 
 def _show_reply(console: Console, number: int, reply: str, elapsed: float) -> None:
-    """Use whitespace and a subtle heading instead of full-width answer boxes."""
-    label = Text("  ◈ ORIN", style="bold bright_cyan")
-    label.append(f"  ·  {elapsed:.1f}s", style="dim")
+    """Display a readable, separated response without a large surrounding box."""
     console.print()
-    console.print(label)
-    console.print(Padding(render_reply(reply or "(No response text)"), (0, 1, 1, 4)))
-    console.print()
-
-
-def _show_error(console: Console) -> None:
-    """Never display raw error text, local paths or exception tracebacks."""
-    console.print()
-    console.print("  [dim]◈ ORIN  ·  Sorğunu indi tamamlaya bilmədim. Yenidən yoxla.[/]")
-    console.print()
-
-
-def _auto_clear_frequency(console: Console) -> int:
-    """Refresh clutter on small Termux screens, unless disabled by the user."""
-    configured = os.getenv("ORIN_AUTO_CLEAR_EVERY")
-    if configured is not None:
-        try:
-            return max(0, int(configured))
-        except ValueError:
-            return 0
-    is_termux = "com.termux" in os.getenv("PREFIX", "") or bool(
-        os.getenv("TERMUX_VERSION")
+    console.print(
+        Text("  ◈ ORIN", style="bold bright_cyan")
+        + Text(f"  ·  {elapsed:.1f}s", style="dim")
     )
-    return 8 if is_termux else 0
+    console.print()
+    message = render_reply(reply or "Cavab boş gəldi.")
+    from rich.padding import Padding
+
+    console.print(Padding(message, (0, 2)))
+    console.print()
+
+
+def _friendly_failure(console: Console) -> None:
+    """Keep internal paths, stack traces, and secrets out of the chat transcript."""
+    console.print()
+    console.print(
+        Text("  ◈ ORIN  ", style="bold bright_cyan")
+        + Text("Sorğunu tamamlaya bilmədim. Bir daha yoxla.", style="dim")
+    )
+    console.print()
+
+
+def _auto_clear_interval() -> int:
+    """Refresh after a few turns on interactive terminals; 0 disables auto clearing."""
+    raw = os.getenv("ORIN_AUTO_CLEAR_EVERY", "12")
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 12
 
 
 def start_terminal(provider, agent, *, console: Console | None = None) -> int:
-    """Run a resilient, distraction-free terminal chat on mobile and desktop."""
+    """Run an uninterrupted chat even if an OS tool or the provider fails."""
     console = console or Console(highlight=False)
     stats = SessionStats()
     model = str(getattr(provider, "model", "Gemini"))
     _banner(console, stats, model)
-    auto_clear = _auto_clear_frequency(console)
+    since_clear = 0
 
     while True:
+        clear_every = _auto_clear_interval()
+        if console.is_terminal and clear_every and since_clear >= clear_every:
+            console.clear()
+            _banner(console, stats, model)
+            since_clear = 0
+
         try:
-            console.print("[bold yellow]❯[/] [bold white]YOU[/]  ", end="")
+            console.print("[bold bright_yellow]❯[/] [bold white]YOU[/]  ", end="")
             message = input().strip()
         except (EOFError, KeyboardInterrupt):
             console.print("\n[dim]Session ended.[/]")
             return 0
+
         if not message:
             continue
         command = message.casefold()
         if command in {"/exit", "exit", "/quit", "quit"}:
-            console.print("[dim]Session ended.[/]")
+            console.print("\n[dim]Session ended.[/]")
             return 0
         if command == "/help":
             console.print(
-                "[dim]/help[/] commands  [dim]/status[/] metrics  "
-                "[dim]/clear[/] screen  [dim]/exit[/] quit\n"
+                "\n[cyan]/help[/]  [cyan]/status[/]  [cyan]/clear[/]  "
+                "[cyan]/exit[/]\n"
             )
             continue
         if command == "/status":
-            console.print(_status_line(stats, compact=console.width < 65))
-            console.print()
+            console.print(Panel(
+                _status_line(stats, compact=console.width < 65),
+                title="SESSION", border_style="cyan",
+            ))
             continue
         if command == "/clear":
             console.clear()
             _banner(console, stats, model)
+            since_clear = 0
             continue
 
-        # Refresh between requests, never in the middle of a model response.
-        if auto_clear and stats.requests and stats.requests % auto_clear == 0:
-            console.clear()
-            console.print("[bold cyan]◈ ORIN[/]  [dim]· conversation continues[/]\n")
-            clean_input = CONTROL_CODES.sub("", ANSI_ESCAPE.sub("", message))
-            console.print(Text("❯ YOU  ", style="bold yellow") + Text(clean_input))
-
         stats.requests += 1
+        since_clear += 1
         started = monotonic()
         animated = (
             console.is_terminal
@@ -226,22 +242,24 @@ def start_terminal(provider, agent, *, console: Console | None = None) -> int:
             and not os.getenv("ORIN_NO_ANIMATION")
         )
         indicator = (
-            console.status("[cyan]◈ Thinking...[/]", spinner="dots", refresh_per_second=8)
+            console.status(
+                "[bright_cyan]◈ Thinking...[/]",
+                spinner="dots", refresh_per_second=8,
+            )
             if animated
             else nullcontext()
         )
+        if not animated:
+            console.print("[dim]  ◈ Thinking...[/]")
+
         try:
             with indicator:
                 reply = provider.ask(message, agent)
-        except KeyboardInterrupt:
-            console.print("\n[dim]  Request interrupted.[/]\n")
-            continue
         except Exception:
-            # Android permissions, malformed tool outputs or network failures
-            # must never terminate the interactive session or leak tracebacks.
+            # Android /proc restrictions, Gemini failures, etc. must not kill the chat.
             stats.errors += 1
             stats.last_seconds = monotonic() - started
-            _show_error(console)
+            _friendly_failure(console)
         else:
             stats.successes += 1
             stats.last_seconds = monotonic() - started
