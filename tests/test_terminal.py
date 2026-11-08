@@ -99,7 +99,7 @@ def test_model_reply_cannot_inject_terminal_control_codes():
     from orin.cli import render_reply
 
     result = render_reply("Hello *emphasis* [red]literal[/]\x1b[2J")
-    assert result.plain == "Hello emphasis [red]literal[/][2J"
+    assert result.plain == "Hello emphasis [red]literal[/]"
     assert any("bright_cyan" in str(span.style) for span in result.spans)
 
 
@@ -108,9 +108,49 @@ def test_error_request_updates_statistics(capsys):
 
     provider = MagicMock()
     provider.ask.side_effect = GeminiError("Gemini busy")
-    with patch("builtins.input", side_effect=["Hello", "/exit"]):
+    with patch("builtins.input", side_effect=["Hello", "/status", "/exit"]):
         assert start_terminal(provider, MagicMock()) == 0
     output = capsys.readouterr().out
-    assert "Gemini busy" in output
+    assert "Gemini busy" not in output
+    assert "Traceback" not in output
+    assert "Sorğunu indi tamamlaya bilmədim" in output
     assert "REQUESTS  01" in output
     assert "ERRORS  01" in output
+
+
+def test_chat_does_not_print_metrics_after_each_answer(capsys):
+    provider = MagicMock()
+    provider.ask.return_value = "Salam!"
+    with patch("builtins.input", side_effect=["Hi", "/exit"]):
+        assert start_terminal(provider, MagicMock()) == 0
+    output = capsys.readouterr().out
+    assert "Salam!" in output
+    assert "REQUESTS" not in output
+    assert "ERRORS" not in output
+    assert "ORIN" in output
+
+
+def test_chat_survives_unexpected_android_permission_error(capsys):
+    provider = MagicMock()
+    provider.ask.side_effect = [PermissionError(13, "Permission denied", "/proc/stat"), "OK"]
+    with patch("builtins.input", side_effect=["CPU?", "Salam", "/status", "/exit"]):
+        assert start_terminal(provider, MagicMock()) == 0
+    output = capsys.readouterr().out
+    assert "Traceback" not in output
+    assert "/proc/stat" not in output
+    assert "OK" in output
+    assert "ERRORS  01" in output
+    assert "SUCCESS  01" in output
+
+
+def test_termux_auto_clear_can_be_disabled(monkeypatch):
+    from rich.console import Console
+
+    from orin.terminal_ui import _auto_clear_frequency
+
+    console = Console(width=70, height=30)
+    monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
+    monkeypatch.delenv("ORIN_AUTO_CLEAR_EVERY", raising=False)
+    assert _auto_clear_frequency(console) == 8
+    monkeypatch.setenv("ORIN_AUTO_CLEAR_EVERY", "0")
+    assert _auto_clear_frequency(console) == 0
