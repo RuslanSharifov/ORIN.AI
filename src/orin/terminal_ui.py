@@ -38,6 +38,7 @@ COMPANION = (
     "       ▐█  █▌",
 )
 
+ANSI_CSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 CONTROL_CODES = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 EMPHASIS = re.compile(
     r"(?P<code>\x60[^\x60\n]+\x60)"
@@ -49,7 +50,7 @@ EMPHASIS = re.compile(
 
 def render_reply(message: str) -> Text:
     """Render emphasis without treating AI output as Rich markup or terminal codes."""
-    safe = CONTROL_CODES.sub("", message)
+    safe = CONTROL_CODES.sub("", ANSI_CSI.sub("", message))
     result = Text(no_wrap=False)
     position = 0
     for match in EMPHASIS.finditer(safe):
@@ -86,7 +87,7 @@ def _status_line(stats: SessionStats, *, compact: bool = False) -> Text:
         return line
     line.append(f"REQUESTS  {stats.requests:02d}    ", style="bright_cyan")
     line.append(f"SUCCESS  {stats.successes:02d}    ", style="green")
-    line.append(f"FAILED  {stats.errors:02d}", style="yellow")
+    line.append(f"ERRORS  {stats.errors:02d}", style="yellow")
     if stats.last_seconds is not None:
         line.append(f"    {stats.last_seconds:.1f}s", style="dim")
     return line
@@ -173,18 +174,24 @@ def _friendly_failure(console: Console) -> None:
     console.print()
     console.print(
         Text("  ◈ ORIN  ", style="bold bright_cyan")
-        + Text("Sorğunu tamamlaya bilmədim. Bir daha yoxla.", style="dim")
+        + Text("Sorğunu indi tamamlaya bilmədim. Yenidən cəhd et.", style="dim")
     )
     console.print()
 
 
-def _auto_clear_interval() -> int:
+def _auto_clear_interval(default: int = 12) -> int:
     """Refresh after a few turns on interactive terminals; 0 disables auto clearing."""
-    raw = os.getenv("ORIN_AUTO_CLEAR_EVERY", "12")
+    raw = os.getenv("ORIN_AUTO_CLEAR_EVERY", str(default))
     try:
         return max(0, int(raw))
     except ValueError:
-        return 12
+        return default
+
+
+def _auto_clear_frequency(console: Console) -> int:
+    """Termux screens are smaller, so refresh its conversation more often."""
+    termux = "com.termux" in os.getenv("PREFIX", "")
+    return _auto_clear_interval(8 if termux else 12)
 
 
 def start_terminal(provider, agent, *, console: Console | None = None) -> int:
@@ -196,7 +203,7 @@ def start_terminal(provider, agent, *, console: Console | None = None) -> int:
     since_clear = 0
 
     while True:
-        clear_every = _auto_clear_interval()
+        clear_every = _auto_clear_frequency(console)
         if console.is_terminal and clear_every and since_clear >= clear_every:
             console.clear()
             _banner(console, stats, model)
