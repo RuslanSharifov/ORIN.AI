@@ -79,7 +79,7 @@ def test_status_counts_requests_and_successes(capsys):
     output = capsys.readouterr().out
     assert "REQUESTS  01" in output
     assert "SUCCESS  01" in output
-    assert "ERRORS  00" in output
+    assert "FAILED  00" in output
 
 def test_original_banner_fits_common_terminal_widths():
     from rich.console import Console
@@ -154,3 +154,35 @@ def test_termux_auto_clear_can_be_disabled(monkeypatch):
     assert _auto_clear_frequency(console) == 8
     monkeypatch.setenv("ORIN_AUTO_CLEAR_EVERY", "0")
     assert _auto_clear_frequency(console) == 0
+
+
+def test_stats_not_repeated_beneath_messages(capsys):
+    provider = MagicMock()
+    provider.ask.return_value = "Salam"
+    with patch("builtins.input", side_effect=["salam", "yeniden", "/exit"]):
+        assert start_terminal(provider, MagicMock()) == 0
+    output = capsys.readouterr().out
+    assert "Salam" in output
+    assert "REQUESTS" not in output
+    assert output.count("◈ ORIN") >= 2
+
+
+def test_unexpected_tool_failure_does_not_close_chat(capsys):
+    provider = MagicMock()
+    provider.ask.side_effect = [PermissionError("/proc/stat"), "Yeniden salam"]
+    with patch("builtins.input", side_effect=["CPU", "Salam", "/status", "/exit"]):
+        assert start_terminal(provider, MagicMock()) == 0
+    output = capsys.readouterr().out
+    assert "/proc/stat" not in output
+    assert "Yeniden salam" in output
+    assert "FAILED  01" in output
+    assert provider.ask.call_count == 2
+
+
+def test_refresh_interval_can_be_disabled(monkeypatch):
+    from orin.terminal_ui import _auto_clear_interval
+
+    monkeypatch.setenv("ORIN_AUTO_CLEAR_EVERY", "0")
+    assert _auto_clear_interval() == 0
+    monkeypatch.setenv("ORIN_AUTO_CLEAR_EVERY", "not-a-number")
+    assert _auto_clear_interval() == 12
