@@ -1,4 +1,4 @@
-"""Read-only system utilities."""
+"""Read-only system utilities, including restricted Android devices."""
 
 from datetime import datetime
 
@@ -12,15 +12,12 @@ def get_current_time() -> str:
     return datetime.now().astimezone().strftime("%H:%M")
 
 
-def get_ram_usage() -> dict[str, float | str]:
-    """Return observed memory usage; percentages are in [0, 100]."""
+def get_ram_usage() -> dict[str, float]:
+    """Read RAM usage, or report OS restrictions to the agent safely."""
     try:
-        try:
         memory = psutil.virtual_memory()
     except (OSError, psutil.Error) as error:
-        raise ToolError("RAM məlumatına bu cihazda giriş məhduddur.") from error
-    except (OSError, psutil.Error):
-        return {"status": "unavailable", "reason": "Memory metrics are restricted on this device"}
+        raise ToolError("RAM statistics are restricted on this device.") from error
     return {
         "percent": float(memory.percent),
         "total_gb": round(memory.total / (1024**3), 2),
@@ -28,13 +25,10 @@ def get_ram_usage() -> dict[str, float | str]:
     }
 
 
-def get_cpu_usage() -> dict[str, float | str]:
-    """Return a short sampled CPU load percentage."""
+def get_cpu_usage() -> dict[str, float]:
+    """Read CPU load, or report OS restrictions to the agent safely."""
     try:
-        try:
         usage = psutil.cpu_percent(interval=0.1)
     except (OSError, psutil.Error) as error:
-        raise ToolError("CPU məlumatına bu cihazda giriş məhduddur.") from error
+        raise ToolError("CPU statistics are restricted on this device.") from error
     return {"percent": float(usage)}
-    except (OSError, psutil.Error):
-        return {"status": "unavailable", "reason": "CPU usage is restricted on this device"}
