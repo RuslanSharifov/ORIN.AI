@@ -191,7 +191,7 @@ def _auto_clear_interval(default: int = 12) -> int:
 def _auto_clear_frequency(console: Console) -> int:
     """Termux screens are smaller, so refresh its conversation more often."""
     termux = "com.termux" in os.getenv("PREFIX", "")
-    return _auto_clear_interval(8 if termux else 12)
+    return _auto_clear_interval(8 if termux else 0)
 
 
 def start_terminal(provider, agent, *, console: Console | None = None) -> int:
